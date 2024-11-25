@@ -1,11 +1,3 @@
-export const dig = (obj, target) =>
-    target in obj
-      ? obj[target]
-      : Object.values(obj).reduce((acc, val) => {
-          if (acc !== undefined) return acc;
-          if (typeof val === 'object') return dig(val, target);
-        }, undefined);
-
 export const get = (obj, targetKey) => {
     for (const key in obj) {
       if (key === targetKey) {
@@ -26,13 +18,14 @@ export const scaleSelection = (selection, prevSelection) => {
     }
 }
 
-export const slideRow = (row, dir) => {
-    // console.low(row)
-    if (dir === -1) {
-        row.style.transform = 'translate(-500px,0)'    
-    }
-    if (dir === 1) {
-        row.style.transform = 'translate(500px, 0)'    
-    }
-}
+// Better horizontal movement maybe?
+// export const slideRow = (row, dir) => {
+//     // console.low(row)
+//     if (dir === -1) {
+//         row.style.transform = 'translate(-500px,0)'    
+//     }
+//     if (dir === 1) {
+//         row.style.transform = 'translate(500px, 0)'    
+//     }
+// }
   
