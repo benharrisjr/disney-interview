@@ -1,3 +1,5 @@
+import { get } from "./utils.js"
+
 export const renderModalContent = (tileData) => {
     const modal = document.getElementById('modal')
     modal.style.display = 'block'

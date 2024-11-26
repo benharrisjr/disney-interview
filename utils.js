@@ -18,21 +18,13 @@ export const scaleSelection = (selection, prevSelection) => {
     }
 }
 
-export const getAspectRatio = () => {
-    const aspectRatio = window.innerWidth / window.innerHeight;
-    return aspectRatio
-}
-
 export const createRowContent = (rowData, index) => {
-    console.log(rowData)
-    console.log(index)
     const div = document.createElement('div')
     const rowTitle = document.createElement('span')
     const categoryTitle = get(rowData?.text, 'content')
     rowTitle.classList.add('row-title')
     rowTitle.textContent = categoryTitle
     const row = document.createElement('div')
-    row.style.maxHeight = '220px'
     row.className = 'row'
     row.dataset.index = index
     
@@ -51,7 +43,7 @@ export const createRowContent = (rowData, index) => {
         image.src = imageUrl
         image.style.width = '100%'
         image.style.height = 'auto'
-        image.style.minHeight = '130px'
+        // image.style.minHeight = '130px'
         card.appendChild(image)
         row.appendChild(card)    
 
