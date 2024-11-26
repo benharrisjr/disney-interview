@@ -1,31 +1,146 @@
-import { get, scaleSelection } from './utils.js'
+import { get, scaleSelection, getAspectRatio, createRowContent } from './utils.js'
 import { getInitialData, getRefData } from './api.js'
 
-let currentRow = 0
+const { containers } = await getInitialData()
+console.log(containers)
+const initialContent = containers.filter((container) => !container?.set?.refId)
+let refDataLoaded = false
+
+const appRoot = document.getElementById('app')
+
+const renderInitialContent = () => {
+    const fragment = document.createDocumentFragment()
+    initialContent.map((container, index) => {
+        if (index > 0) {
+            const row = createRowContent(container?.set, index)
+            row.dataset.rowNumber = index
+            fragment.appendChild(row)
+        }
+    })
+    appRoot.appendChild(fragment)
+}
+const renderRefContent = () => {
+    const appRoot = document.getElementById('app')
+    const refFragment = document.createDocumentFragment()
+    containers.map(async (container, index) => {
+        if (container?.set?.refId) {
+            const refData = await getRefData(container?.set?.refId)
+            console.log(refData[Object.keys(refData)[0]])
+            const refSubData = refData[Object.keys(refData)[0]]
+            const row = createRowContent(refSubData, index)
+            row.dataset.rowNumber = index
+            refFragment.appendChild(row)
+            appRoot.appendChild(refFragment)
+            
+        }
+    })
+    const loadMore = document.getElementById('load-more')
+    loadMore.remove()
+    refDataLoaded = true
+}
+
+const renderModalContent = (tileData) => {
+    const modal = document.getElementById('modal')
+    modal.style.display = 'block'
+    const modalContent = document.createElement('div')
+    modalContent.classList.add('content-modal')
+    const modalTitle = document.createElement('div')
+    modalTitle.classList.add('modal-title-info')
+    const modalSubTitle = document.createElement('div')
+    const modalLogo = document.createElement('img')
+    
+    const modalRuntime = document.createElement('span')
+    let modalBackground
+    if (tileData?.videoArt.length !== 0) {
+        modalBackground = document.createElement('video')
+        modalBackground.src = get(tileData?.videoArt, 'url')
+        modalBackground.autoplay = true
+        modalBackground.loop = true
+    } else {
+        modalBackground = document.createElement('div')
+        const imageUrl = get(tileData?.image?.hero_collection?.['1.78'], 'url').replace('width=500', 'width=1440')
+        modalBackground.style.backgroundImage = `url(${imageUrl})`
+        modalBackground.style.backgroundSize = 'cover'
+        modalBackground.style.backgroundRepeat = 'no-repeat'
+    }
+    modalBackground.classList.add('modal-background')
+    
+
+    const logoUrl = get(tileData?.image?.logo?.['2.00'] || tileData?.image?.title_treatment_layer?.['1.78'], 'url')
+    modalLogo.src = logoUrl?.replace('jpeg', 'png')
+    if (tileData?.ratings) {
+        const modalRating = document.createElement('span')
+        const rating = get(tileData?.ratings, 'value')
+        modalRating.classList.add('subtitle-cards')
+        modalRating.textContent = rating
+        modalTitle.appendChild(modalRating)
+    }
+    if (tileData?.releaseDate) {
+        const modalReleaseDate = document.createElement('span')
+        const releaseDate = get(tileData?.releases, 'releaseDate')
+        modalSubTitle.classList.add('subtitle-data')
+        modalReleaseDate.textContent = releaseDate
+        modalSubTitle.appendChild(modalReleaseDate)
+    }
+    
+    modalTitle.appendChild(modalLogo)
+    modalContent.appendChild(modalLogo)
+    modalContent.appendChild(modalTitle)
+    modalContent.appendChild(modalSubTitle)
+    modalContent.appendChild(modalBackground)
+    
+    modal.appendChild(modalContent)
+}
+renderInitialContent()
+
+const options = {
+    root: null,
+    rootMargin: "0px",
+    threshold: 0.2,
+};
+  
+const observer = new IntersectionObserver((entries) => {
+    const entry = entries[0];
+    if (entry.isIntersecting) {
+        console.log('loading refs')
+        renderRefContent()
+        observer.disconnect()
+    }
+}, options);
+let target = document.querySelector('#load-more')
+observer.observe(target)
+
+// Event Listeners
+
+let currentRow = 1
 let currentColumn = 0
+
+// Default tile selection
+const selectedTileData = containers[currentRow]?.set?.items[currentColumn]
+const initialSelection = document.getElementById(`${currentRow}_${currentColumn}`)
+initialSelection.classList.add('selected')
 
 // TODO: optimize selection
 // Use a map of rows and current columns to better navigate vertically
 // without scrolling far down into the next category because you are 10 
 // deep in another
-let currentSelectionIndex = {}
+// let currentSelectionIndex = {}
+const setSelection = (row = 0, col = 0) => {
 
+}
 let activeKey = ''
-// Event Listeners
+let prevSelection
 document.addEventListener('keydown', function(e) {
-    // console.log(e.key)
-    // let currentRowColumn = currentSelectionIndex[currentRow]
-    // console.log(currentRowColumn)
-    const prevSelection = document.getElementById(`${containers[currentRow]?.set?.items[currentColumn]?.contentId || containers[currentRow]?.set?.items[currentColumn]?.collectionId}_${currentColumn}`)
+    const categoryTitle = get(containers[currentRow]?.set?.text, 'content')
+    prevSelection = document.getElementById(`${currentRow}_${currentColumn}`)
     if (activeKey == e.key) return;
     activeKey = e.key;
-    let currentRowElement = document.querySelector(`[data-index="${currentRow}"]`)
+    // let currentRowElement = document.querySelector(`[data-index="${currentRow}"]`)
     //left
     if (e.key == 'ArrowLeft') {
         console.log('start moving LEFT');
         if (currentColumn > 0) {
             currentColumn -= 1
-            // slideRow(currentRowElement, -1)
         } else {
             currentColumn = 0
         }
@@ -34,44 +149,40 @@ document.addEventListener('keydown', function(e) {
     //top
     else if (e.key == 'ArrowUp') {
         console.log('start moving UP');
-        if (currentRow > 0) {
+        if (currentRow > 1) {
             currentRow -= 1
-            currentRowElement = document.querySelector(`[data-index="${currentRow}"]`)
+            // currentRowElement = document.querySelector(`[data-index="${currentRow}"]`)
         } else {
-            currentRow = 0
+            currentRow = 1
         }
     }
     //right
     else if (e.key == 'ArrowRight') {
-        
-        // console.log(containers[currentRow]?.set?.items.length)
         if (currentColumn < containers[currentRow]?.set?.items.length) {
             console.log('start moving RIGHT');
             currentColumn += 1
-            currentRowElement = document.querySelector(`[data-index="${currentRow}"]`)
-            // slideRow(currentRowElement, 1)
+            // currentRowElement = document.querySelector(`[data-index="${currentRow}"]`)
         }
     }
     //bottom
     else if (e.key == 'ArrowDown') {
         console.log('start moving DOWN');
-        // console.log(containers)
-        if (currentRow < maxRow) {
-            currentRow += 1
+        console.log(currentRow)
+        if (currentRow < containers.length-1) {
+             currentRow += 1
+            //  scrollBy(0,50,{ behavior: 'smooth' })
         }
     }
-    // console.log(currentColumn)
-    // console.log(currentRow)
-    // console.log(document.getElementById(`${containers[currentRow]?.set?.items[currentColumn]?.contentId}`))
+
     const selectedTileData = containers[currentRow]?.set?.items[currentColumn]
-    const selection = document.getElementById(`${selectedTileData?.contentId || selectedTileData?.collectionId}_${currentColumn}`)
+    const selection = document.getElementById(`${currentRow}_${currentColumn}`)
     if (selection !== prevSelection) {
         selection.classList.add('selected')
-        prevSelection.classList.remove('selected')
-        selection.scrollIntoView(false, { behavior: 'smooth' })
+        prevSelection.classList.remove('selected') 
+        // selection.scrollIntoView(false, { behavior: 'smooth', block: 'center', inline: 'center' })
+        selection.scrollIntoViewIfNeeded()
     }
     
-    // console.log(currentRowElement)
     scaleSelection(selection, prevSelection)
     if (e.key === 'Enter') {
         renderModalContent(selectedTileData)
@@ -101,103 +212,3 @@ document.addEventListener('keyup', function(e) {
 
     activeKey = 0;
 });
-
-const { containers } = await getInitialData()
-// console.log(containers)
-
-const initialContent = containers.filter((container) => !container?.set?.refId)
-const refContent = containers.filter((container) => container?.set?.refId)
-
-let maxRow = initialContent.length - 1
-console.log(initialContent)
-console.log(refContent)
-const appRoot = document.getElementById('app')
-const fragment = document.createDocumentFragment()
-
-const renderInitialContent = () => {
-    initialContent.map((container, index) => {
-        let items = container?.set?.items
-        console.log(container)
-        if (container?.set?.refId) {
-            const refData = getRefData(container?.set?.refId)
-            items = get(refData, items)
-            console.log(refData)
-        }
-        const div = document.createElement('div')
-        const categoryTitle = get(container.set.text, 'content')
-        const row = document.createElement('div')
-        row.className = 'row'
-        row.dataset.index = index
-        div.textContent = categoryTitle
-        currentSelectionIndex[index] = 0
-    
-        container?.set?.items?.map((item, index) => {
-            // Get 16:9 aspect ratio tiles
-            const imageUrl = get(item?.image?.tile?.['1.78'], 'url')
-            const card = document.createElement('a')
-            card.id = `${item.contentId || item.collectionId}_${index}`
-            card.className ='card'
-            const image = document.createElement('img')
-            image.loading = 'lazy'
-            image.src = imageUrl
-            image.style.width = '100%'
-            image.style.height = 'auto'
-            image.style.minHeight = '130px'
-            card.appendChild(image)
-            row.appendChild(card)    
-    
-        })
-        div.appendChild(row)
-        fragment.appendChild(div)
-    })
-}
-const renderRefContent = () => {
-
-}
-
-const renderModalContent = (tileData) => {
-    const modal = document.getElementById('modal')
-    modal.style.display = 'block'
-    const modalContent = document.createElement('div')
-    modalContent.classList.add('content-modal')
-    const modalLogo = document.createElement('img')
-    const modalVideo = document.createElement('video')
-
-    const modalBack = document.createElement('button') 
-    modalBack.textContent = 'Back'
-    
-    modalVideo.src = get(tileData?.videoArt, 'url')
-    modalVideo.classList.add('modal-video')
-    modalVideo.autoplay = true
-    modalVideo.loop = true
-
-    const logoUrl = get(tileData?.image?.logo?.['2.00'], 'url')
-    modalLogo.src = logoUrl?.replace('jpeg', 'png')
-
-    modalContent.appendChild(modalLogo)
-    modalContent.appendChild(modalBack)
-    modalContent.appendChild(modalVideo)
-    
-    modal.appendChild(modalContent)
-}
-renderInitialContent()
-
-const options = {
-    root: document.querySelector("#app"),
-    rootMargin: "0px",
-    threshold: 0.5,
-  };
-
-const callback = () => {
-
-}
-  
-const observer = new IntersectionObserver(callback, options);
-let target = document.querySelector('#app').lastElementChild
-console.log(document.querySelector('#app'))
-// observer.observe(target)
-
-
-
-console.log(document.getElementById(`${containers[currentRow]?.set?.items[currentColumn]?.contentId}`))
-appRoot.appendChild(fragment)

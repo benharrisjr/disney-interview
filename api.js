@@ -7,6 +7,5 @@ export const getInitialData = async () => {
 export const getRefData = async (refId) =>  {
     const response = await fetch(`https://cd-static.bamgrid.com/dp-117731241344/sets/${refId}.json`)
     const data = await response.json()
-    console.log(data?.data)
     return data?.data
 }

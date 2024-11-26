@@ -18,14 +18,46 @@ export const scaleSelection = (selection, prevSelection) => {
     }
 }
 
-// Better horizontal movement maybe?
-// export const slideRow = (row, dir) => {
-//     // console.low(row)
-//     if (dir === -1) {
-//         row.style.transform = 'translate(-500px,0)'    
-//     }
-//     if (dir === 1) {
-//         row.style.transform = 'translate(500px, 0)'    
-//     }
-// }
+export const getAspectRatio = () => {
+    const aspectRatio = window.innerWidth / window.innerHeight;
+    return aspectRatio
+}
+
+export const createRowContent = (rowData, index) => {
+    console.log(rowData)
+    console.log(index)
+    const div = document.createElement('div')
+    const rowTitle = document.createElement('span')
+    const categoryTitle = get(rowData?.text, 'content')
+    rowTitle.classList.add('row-title')
+    rowTitle.textContent = categoryTitle
+    const row = document.createElement('div')
+    row.style.maxHeight = '220px'
+    row.className = 'row'
+    row.dataset.index = index
+    
+    // currentSelectionIndex[index] = 0
+
+    rowData?.items?.map((item, i) => {
+        // const imageUrl = item.collectionId ? get(item?.image?.tile?.['0.71'], 'url') : get(item?.image?.tile?.['1.78'], 'url')
+        const imageUrl = get(item?.image?.tile?.['1.78'], 'url')
+        const card = document.createElement('a')
+        card.id = `${index}_${i}`
+        card.className ='card'
+        const image = document.createElement('img')
+        if (rowData?.refId) {
+            image.loading = 'lazy'
+        }
+        image.src = imageUrl
+        image.style.width = '100%'
+        image.style.height = 'auto'
+        image.style.minHeight = '130px'
+        card.appendChild(image)
+        row.appendChild(card)    
+
+    })
+    div.appendChild(rowTitle)
+    div.appendChild(row)
+    return div
+}
   
